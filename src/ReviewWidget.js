@@ -135,7 +135,7 @@ class ReviewWidget extends React.Component {
   };
 
   getProduct = () => {
-    return fetch('/products.csv')
+    return fetch(process.env.PUBLIC_URL+'/products.csv')
       .then((r) => r.text())
       .then(text  => {
         let products = readString(text).data;
