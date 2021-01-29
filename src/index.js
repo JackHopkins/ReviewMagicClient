@@ -12,7 +12,7 @@ const store = configureStore()
 
 const Application = () => (
   <Provider store={store}>
-    <ReviewWidget address={'http://34.67.37.132:80'} />
+    <ReviewWidget address={'https://34.67.37.132:80'} />
   </Provider>
 )
 
