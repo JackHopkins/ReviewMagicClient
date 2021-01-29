@@ -14,6 +14,7 @@ import {readString} from "react-papaparse";
 import List from '@material-ui/core/List';
 import Paper from '@material-ui/core/Paper';
 import Slider from '@material-ui/core/Slider';
+import ListSubheader from '@material-ui/core/ListSubheader';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import { connect } from 'react-redux';
@@ -22,8 +23,8 @@ import queryString from 'query-string';
 
 const styles = (theme) => ({
   root: {
-    width: '100%',
-    maxWidth: 360,
+    minHeight: 500,
+    width: 360,
     backgroundColor: theme.palette.background.paper,
   },
   textbox: {
@@ -43,6 +44,12 @@ const styles = (theme) => ({
   section3: {
     margin: theme.spacing(3, 1, 1),
   },
+  submit: {
+    width: '100%',
+  },
+  skeleton: {
+    margin: '5px 0'
+  }
 });
 
 
@@ -72,7 +79,12 @@ class ReviewWidget extends React.Component {
     console.info("Getting review.")
 
     if (this.state.review) {
-      this.state.previousReviews.push({review: this.state.review, tags: this.state.tags})
+      let reviewObj = {review: this.state.review, summary: this.state.summary}
+      console.log("Checking previous reviews.")
+      if (!new Set(this.state.previousReviews).has(reviewObj)) {
+        this.state.previousReviews.push(reviewObj)
+        console.log("Adding previous review.")
+      }
     }
 
     let tag_array = Array.from(new Set([...this.state.selectedService, ...this.state.selectedPurchase]))
@@ -100,14 +112,13 @@ class ReviewWidget extends React.Component {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     };
-    const response = await fetch(location+'/review-generator?temperature='+temperature, requestOptions);
     this.setState({ awaiting: true });
+    const response = await fetch(location+'/review-generator?temperature='+temperature, requestOptions);
     const data = await response.json();
     this.setState({ awaiting: false });
-    const output = data.output.slice(6); //Remove the <pad> at the start.
-    this.setState({ review: output });
-
-    console.info(output)
+    const review = data.review;
+    const summary = data.summary;
+    this.setState({ review: review, summary: summary});
   }
 
   handleClick = (chip, selectedState) => {
@@ -177,7 +188,7 @@ class ReviewWidget extends React.Component {
     return product && <div>
       <Grid container alignItems="center">
         <Grid item xs>
-          <Typography gutterBottom variant="h5">
+          <Typography gutterBottom variant="h6">
             {product.title}
           </Typography>
         </Grid>
@@ -194,23 +205,27 @@ class ReviewWidget extends React.Component {
   }
 
   ReviewSection = (classes) => {
-    let review = this.state.review
-    if (review == null || this.state.awaiting) {
+    if (this.state.awaiting) {
     return <React.Fragment>
-              <Skeleton/>
-              <Skeleton/>
-              <Skeleton/>
+              <Skeleton className={classes.skeleton} variant="rect" height={48}/>
+
+              <Skeleton className={classes.skeleton} variant="rect" height={143} />
+
            </React.Fragment>
     }
+    let review = this.state.review
+    let summary = this.state.summary
     return review && <form noValidate autoComplete="off">
-                <TextField className={classes.textbox}
-                           id="filled-basic"
-                           label="Review"
-                           variant="filled"
-                           multiline
-                           rows={4}
-                           value={review}/>
-            </form>
+                        <TextField className={classes.textbox}
+                          id="standard-read-only-input"
+                          label="Summary" value={summary}/>
+                        <TextField className={classes.textbox}
+                                   id="filled-basic"
+                                   label="Review"
+                                   multiline
+                                   rows={6}
+                                   value={review}/>
+                      </form>
 
   }
   TagSection = (classes) => {
@@ -244,21 +259,32 @@ class ReviewWidget extends React.Component {
   }
 
   PreviousReviews = (classes) => {
-    return <List className={classes.root}>
+
+    const handleListItemClick = (event, index, reviewObj) => {
+      this.setState({
+        selectedIndex: index,
+        review: reviewObj.review,
+        summary: reviewObj.summary,
+        awaiting: false
+      })
+    };
+
+    return <div className={classes.section1}>
+      <List dense className={classes.root} subheader={
+      <ListSubheader component="div" id="nested-list-subheader">
+        Previous Review
+      </ListSubheader>
+    }>
       {this.state.previousReviews.map((reviewObj, index) => (
         <React.Fragment>
-          <ListItem alignItems="flex-start">
+          <ListItem
+            button
+            alignItems="flex-start"
+            selected={this.state.selectedIndex === index}
+            onClick={(event) => handleListItemClick(event, index, reviewObj)}>
             <ListItemText
-              primary=
-                {reviewObj.tags.map((tag, index) => (
-                    <Chip className={classes.chip}
-                          size="small"
-                          color="primary"
-                          key={index}
-                          label={tag}
-                    />
-                  ))
-              }
+              primary= {reviewObj.summary}
+
               secondary={
                 <React.Fragment>
                   <Typography
@@ -272,22 +298,28 @@ class ReviewWidget extends React.Component {
               }
             />
           </ListItem>
-          <Divider variant="inset" component="li" />
+          {index != this.state.previousReviews.length-1 &&
+            <Divider variant="middle" component="li" />}
         </React.Fragment>
       ))
       }
 
     </List>
+    </div>
   }
 
   render() {
     //const classes = styles();
     const { classes } = this.props;
     return (
-      <Grid container justify="space-between" spacing={2}>
+      <Grid container
+            direction="row"
+            justify="space-evenly"
+            alignItems="flex-start"
+            spacing={4}>
 
-      <Grid key={0} className={classes.root}>
-        <Paper>
+      <Grid key={0}>
+        <Paper className={classes.root}>
         <div className={classes.section1}>
         {this.ProductDetails()}
         </div>
@@ -300,14 +332,16 @@ class ReviewWidget extends React.Component {
             {this.ReviewSection(classes)}
           </div>
           <div className={classes.section4}>
-            <Button size="large" color="primary">Submit</Button>
+            <Button size="large" justify="center" className={classes.submit} color="primary">Submit</Button>
           </div>
         </div>
         }
       </Paper>
       </Grid>
-        <Grid key={1}>
+        <Grid key={1} >
+          <Paper className={classes.root}>
       {this.PreviousReviews(classes)}
+          </Paper>
         </Grid>
       </Grid>
 

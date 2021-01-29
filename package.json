@@ -5,7 +5,7 @@
   "description": "",
   "private": true,
   "scripts": {
-    "start": "react-scripts start",
+    "start": "HTTPS=true react-scripts start",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "build:pre": "react-scripts build",
