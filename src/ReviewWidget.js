@@ -26,6 +26,7 @@ const styles = (theme) => ({
     minHeight: 500,
     width: 360,
     backgroundColor: theme.palette.background.paper,
+    margin: theme.spacing(10, 0)
   },
   textbox: {
     width: '95%',
@@ -37,6 +38,7 @@ const styles = (theme) => ({
   },
   section1: {
     margin: theme.spacing(3, 2),
+    minHeight: '175px'
   },
   section2: {
     margin: theme.spacing(2),
@@ -116,8 +118,8 @@ class ReviewWidget extends React.Component {
     const response = await fetch(location+'/review-generator?temperature='+temperature, requestOptions);
     const data = await response.json();
     this.setState({ awaiting: false });
-    const review = data.review;
-    const summary = data.summary;
+    const review = data.review.slice(1).replace("</s>", ".");
+    const summary = data.summary.slice(1);
     this.setState({ review: review, summary: summary});
   }
 
@@ -275,6 +277,7 @@ class ReviewWidget extends React.Component {
         Previous Review
       </ListSubheader>
     }>
+        <Divider variant="middle" component="li" />
       {this.state.previousReviews.map((reviewObj, index) => (
         <React.Fragment>
           <ListItem
@@ -325,16 +328,19 @@ class ReviewWidget extends React.Component {
         </div>
         <Divider variant="middle"/>
           {this.TagSection(classes)}
-        <Divider variant="middle"/>
+
         {this.state.selectedPurchase.size + this.state.selectedService.size > 0 &&
-        <div>
-          <div className={classes.section3}>
-            {this.ReviewSection(classes)}
-          </div>
-          <div className={classes.section4}>
-            <Button size="large" justify="center" className={classes.submit} color="primary">Submit</Button>
-          </div>
-        </div>
+          <React.Fragment>
+            <Divider variant="middle"/>
+            <div>
+              <div className={classes.section3}>
+                {this.ReviewSection(classes)}
+              </div>
+              <div className={classes.section4}>
+                <Button size="large" justify="center" className={classes.submit} color="primary">Accept & Submit</Button>
+              </div>
+            </div>
+          </React.Fragment>
         }
       </Paper>
       </Grid>
