@@ -42,4 +42,4 @@
 
 ## Referência de API
 
-> `GET      /	                `
+> `GET      /	                `# ReviewMagicClient
